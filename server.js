@@ -1,114 +1,50 @@
-// BASE SETUP
-// =============================================================================
+/**
+ * Module dependencies.
+ */
 
-var express = require('express'),
-    bodyParser = require('body-parser');
+var restify = require('restify');
+var errorHandler = require('errorhandler');
 
-var app = express();
-app.use(bodyParser());
+/**
+ * Controllers (route handlers).
+ */
 
-var env = app.get('env') == 'development' ? 'dev' : app.get('env');
-var port = process.env.PORT || 8080;
+var associationController = require('./controllers/association');
+var regionController = require('./controllers/region');
+var summitController = require('./controllers/summit');
 
-// IMPORT MODELS
-// =============================================================================
-var Sequelize = require('sequelize');
+/**
+ * Create restify server.
+ */
 
-// db config
-var env = "dev";
-var config = require('./database.json')[env];
-var password = config.password ? config.password : null;
-
-// initialize database connection
-var sequelize = new Sequelize(
-    config.database,
-    config.user,
-    config.password,
-    {
-        logging: console.log,
-        define: {
-            timestamps: false
-        }
-    }
-);
-
-var crypto = require('crypto');
-var DataTypes = require("sequelize");
-
-var Association = sequelize.define('association', {
-    code: DataTypes.STRING,
-    name: DataTypes.STRING
-}, {
-    freezeTableName: true,
-    tableName: 'association',
-    instanceMethods: {
-        retrieveAll: function(onSuccess, onError) {
-            Association.findAll({}, {raw: true})
-                .then(onSuccess, onError);
-        },
-        retrieveById: function(association_id, onSuccess, onError) {
-            Association.find({where: {id: association_id}}, {raw: true})
-                .then(onSuccess, onError);
-        },
-        retrieveByCode: function(association_code, onSuccess, onError) {
-            Association.find({where: {code: association_code}}, {raw: true})
-                .then(onSuccess, onError);
-        }
-    }
+var env = (process.env.NODE_ENV == 'development') ? 'dev' : 'production';
+var server = restify.createServer({
+    name: 'json-server'
 });
 
-// IMPORT ROUTES
-// =============================================================================
-var router = express.Router();
+server.use(restify.bodyParser());
+server.use(restify.queryParser());
 
-// on routes that end in /associations
-// ----------------------------------------------------
-router.route('/associations')
+/**
+ * Main routes.
+ */
+server.get('/api/associations', associationController.getAssociations);
+server.get('/api/regions', regionController.getRegions);
+server.get('/api/summits', summitController.getSummits);
 
-// get all the associations (accessed at GET http://localhost:8080/api/associations)
-    .get(function(req, res) {
-        var association = Association.build();
 
-        association.retrieveAll(function(associations) {
-            if (associations) {
-                res.json(associations);
-            } else {
-                res.send(401, "Association not found");
-            }
-        }, function(error) {
-            res.send("Association not found");
-        });
-    });
+/**
+ * 500 Error Handler.
+ */
+console.log(env);
+if (env === 'dev') {
+    server.use(errorHandler());
+}
 
-router.route('/association/:code')
+/**
+ * Start Restify server.
+ */
 
-// get all the associations by CODE (accessed at GET http://localhost:8080/api/associations/:code)
-    .get(function(req, res) {
-        var association = Association.build();
-
-        association.retrieveByCode(req.params.code, function(associations) {
-            if (associations) {
-                res.json(associations);
-            } else {
-                res.send(401, "Association not found");
-            }
-        }, function(error) {
-            res.send("Association not found");
-        });
-    });
-
-// Middleware to use for all requests
-router.use(function(req, res, next) {
-    // do logging
-    console.log('Something is happening.');
-    next();
+server.listen(process.env.PORT || 3000, function() {
+    console.log('%s listening at %s', server.name, server.url);
 });
-
-// REGISTER OUR ROUTES
-// =============================================================================
-app.use('/api', router);
-
-// START THE SERVER
-// =============================================================================
-app.listen(port);
-console.log('Magic happens on port ' + port);

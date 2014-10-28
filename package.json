@@ -1,11 +1,14 @@
 {
     "name": "SotaApi",
+    "version": "0.1.0",
     "main": "server.js",
     "dependencies": {
-        "express": "~4.0.0",
-        "body-parser": "~1.0.1",
-        "mysql": "*",
+        "restify": "^2.8.3",
         "sequelize": "*",
-        "crypto": "*"
+        "mysql": "^2.5.2",
+        "errorhandler": "1.2.2"
+    },
+    "scripts": {
+        "start": "NODE_ENV=development node server.js"
     }
 }
